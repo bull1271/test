@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -75,6 +76,7 @@ jobs:
           assert (target / 'word' / 'document.xml').exists()
 
       - name: Upload directly downloadable DOCX package
+        id: upload_docx_package
         uses: actions/upload-artifact@v4
         with:
           name: JJU-formal-docx-package
@@ -83,6 +85,31 @@ jobs:
           include-hidden-files: true
           compression-level: 6
           retention-days: 7
+
+      - name: Validate downloadable artifact as DOCX
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload_docx_package.outputs.artifact-id }}
+        run: |
+          gh api -H 'Accept: application/vnd.github+json' \
+            /repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip \
+            > packaged-download.docx
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+          from docx import Document
+          p = Path('packaged-download.docx')
+          assert p.exists() and p.stat().st_size > 30000
+          with zipfile.ZipFile(p) as z:
+              names = z.namelist()
+              assert '[Content_Types].xml' in names, names[:20]
+              assert 'word/document.xml' in names
+              assert z.testzip() is None
+          d = Document(p)
+          assert len(d.paragraphs) >= 80
+          assert len(d.tables) >= 10
+          print('downloadable DOCX validated', p.stat().st_size, len(d.paragraphs), len(d.tables))
+          PY
 
       - name: Publish formal Word report release
         env:
