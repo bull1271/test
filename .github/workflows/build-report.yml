@@ -1,0 +1,67 @@
+name: Build formal JJU report
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.docx'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install python-docx
+
+      - name: Build Word report
+        run: python build_jju_report.py
+
+      - name: Verify output
+        run: |
+          test -f "九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx"
+          python - <<'PY'
+          from docx import Document
+          p = "九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx"
+          d = Document(p)
+          text = "\n".join(x.text for x in d.paragraphs)
+          for t in d.tables:
+              for row in t.rows:
+                  for cell in row.cells:
+                      text += "\n" + cell.text
+          banned = ["台账","蓝图","画像","数据治理","年度诊断","根因","复盘","精准支持","尚不能","不能据此","不能仅据","不宜据此","不宜仅凭","据此认定","相对教学成效持续改善","仅凭原始掌握率","风险提示"]
+          found = [x for x in banned if x in text]
+          if found:
+              raise SystemExit("Banned wording found: " + ", ".join(found))
+          print(f"Verified paragraphs={len(d.paragraphs)}, tables={len(d.tables)}")
+          PY
+
+      - name: Commit generated document
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx"
+          if git diff --cached --quiet; then
+            echo "No document changes to commit"
+          else
+            git commit -m "Build formal JJU report [skip ci]"
+            git push
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jju-formal-report
+          path: "九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx"
+          if-no-files-found: error
