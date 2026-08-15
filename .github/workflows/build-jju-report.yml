@@ -52,7 +52,7 @@ jobs:
           assert len(d.paragraphs) >= 80
           print(p, p.stat().st_size, len(d.paragraphs), len(d.tables))
 
-      - name: Upload formal Word report
+      - name: Upload formal Word report artifact
         uses: actions/upload-artifact@v4
         with:
           name: JJU-formal-report
@@ -60,10 +60,12 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Publish Word report to repository
+      - name: Publish formal Word report release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add 九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx
-          git commit -m 'Publish formal JJU report' || exit 0
-          git push
+          gh release delete jju-formal-report --yes --cleanup-tag || true
+          gh release create jju-formal-report \
+            九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx \
+            --title '九江学院医师资格考试综合分析报告正式版' \
+            --notes '提交学校教学指导委员会和校长办公会审议使用。'
