@@ -60,6 +60,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Prepare Word package for direct DOCX download
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil, zipfile
+          source = Path('九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx')
+          target = Path('docx_package')
+          shutil.rmtree(target, ignore_errors=True)
+          target.mkdir()
+          with zipfile.ZipFile(source) as z:
+              z.extractall(target)
+          assert (target / '[Content_Types].xml').exists()
+          assert (target / 'word' / 'document.xml').exists()
+
+      - name: Upload directly downloadable DOCX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: JJU-formal-docx-package
+          path: docx_package/
+          if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 6
+          retention-days: 7
+
       - name: Publish formal Word report release
         env:
           GH_TOKEN: ${{ github.token }}
