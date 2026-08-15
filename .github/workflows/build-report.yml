@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies
         run: pip install python-docx
 
+      - name: Apply python-docx compatibility patch
+        run: |
+          sed -i 's/from docx.enum.section import WD_SECTION_START, WD_SECTION_VERTICAL_ALIGNMENT/from docx.enum.section import WD_SECTION_START/' build_jju_report.py
+          sed -i '/vertical_alignment = WD_SECTION_VERTICAL_ALIGNMENT/d' build_jju_report.py
+
       - name: Build Word report
         run: python build_jju_report.py
 
