@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -59,3 +59,11 @@ jobs:
           path: 九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish Word report to repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 九江学院2023—2025年临床执业医师资格考试综合分析报告_正式版.docx
+          git commit -m 'Publish formal JJU report' || exit 0
+          git push
