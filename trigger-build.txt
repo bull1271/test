@@ -1,0 +1,2 @@
+Generate the formal JJU report with normalized Chinese administrative and teaching-management wording.
+Build attempt: 2
